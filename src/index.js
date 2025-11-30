@@ -441,38 +441,39 @@ class MenuScene extends Phaser.Scene {
     // НОВОЕ: Проверка deep link для автоматического принятия дуэли
     async checkDeepLink() {
         try {
+            // ФИКС: Проверяем не обработали ли мы уже этот deep link
+            const processedKey = 'processed_duel_link';
+            const lastProcessed = sessionStorage.getItem(processedKey);
+            
             // Проверяем Telegram WebApp startapp parameter
             const tg = window.Telegram?.WebApp;
             const startParam = tg?.initDataUnsafe?.start_param;
             
-            // ОТЛАДКА: Показываем все параметры
             console.log('🔍 Checking deep link...');
-            console.log('   Telegram WebApp:', tg ? 'EXISTS' : 'NOT FOUND');
-            console.log('   initDataUnsafe:', tg?.initDataUnsafe);
-            console.log('   start_param:', startParam);
             
             // ВАЖНО: Проверяем несколько способов получения параметра
             const urlParams = new URLSearchParams(window.location.search);
-            const urlMatchId = urlParams.get('matchId'); // Прямой параметр из URL
+            const urlMatchId = urlParams.get('matchId');
             const urlStartParam = urlParams.get('tgWebAppStartParam');
             const hashMatchId = window.location.hash.includes('duel_') 
                 ? window.location.hash.substring(1) 
                 : null;
             
-            console.log('   URL matchId:', urlMatchId);
-            console.log('   URL tgWebAppStartParam:', urlStartParam);
-            console.log('   Hash matchId:', hashMatchId);
-            
             // Используем любой найденный параметр
             const finalParam = startParam || urlStartParam || urlMatchId || hashMatchId;
-            console.log('   Final param:', finalParam);
+            
+            // ФИКС: Пропускаем если уже обрабатывали этот параметр
+            if (finalParam && finalParam === lastProcessed) {
+                console.log('ℹ️ Deep link already processed, skipping');
+                return;
+            }
             
             if (finalParam && finalParam.startsWith('duel_')) {
                 const matchId = finalParam;
                 console.log('🔗 Deep link detected:', matchId);
                 
-                // ОТЛАДКА: Показываем alert чтобы пользователь видел
-                alert(`Deep link found: ${matchId}`);
+                // Сохраняем что обработали этот deep link
+                sessionStorage.setItem(processedKey, matchId);
                 
                 // Показываем loading
                 const loadingBg = this.add.rectangle(
@@ -486,7 +487,7 @@ class MenuScene extends Phaser.Scene {
                 const loadingText = this.add.text(
                     CONSTS.WIDTH / 2,
                     CONSTS.HEIGHT / 2,
-                    '⏳ Принятие вызова...',
+                    '⏳ Загрузка дуэли...',
                     {
                         fontSize: '24px',
                         fill: '#FFD700',
@@ -503,8 +504,87 @@ class MenuScene extends Phaser.Scene {
                 
                 const duelData = await duelResponse.json();
                 const duel = duelData.duel;
+                const userData = getTelegramUserId();
                 
-                // Проверяем статус
+                // ФИКС: Проверяем кто мы в этой дуэли
+                const isCreator = String(duel.player1_id) === String(userData.id);
+                const isPlayer2 = String(duel.player2_id) === String(userData.id);
+                
+                console.log('🔍 Duel check:', { 
+                    status: duel.status, 
+                    isCreator, 
+                    isPlayer2,
+                    myId: userData.id,
+                    player1: duel.player1_id,
+                    player2: duel.player2_id
+                });
+                
+                // ФИКС: Если это создатель - проверяем можно ли играть
+                if (isCreator) {
+                    if (duel.status === 'pending') {
+                        loadingText.setText('⏳ Ожидание соперника...\nОтправьте ссылку другу!');
+                        setTimeout(() => {
+                            loadingBg.destroy();
+                            loadingText.destroy();
+                            // Переходим в историю дуэлей
+                            this.scene.start('DuelHistoryScene');
+                        }, 2000);
+                        return;
+                    } else if (duel.status === 'active' && duel.score1 === null) {
+                        // Можно играть!
+                        loadingText.setText('✅ Соперник принял! Запуск игры...');
+                        setTimeout(() => {
+                            loadingBg.destroy();
+                            loadingText.destroy();
+                            this.scene.start('GameScene', {
+                                mode: 'duel',
+                                matchId: matchId,
+                                seed: duel.seed,
+                                isCreator: true,
+                                opponentUsername: duel.player2_username
+                            });
+                        }, 1500);
+                        return;
+                    } else {
+                        loadingText.setText('ℹ️ Вы уже сыграли в этой дуэли');
+                        setTimeout(() => {
+                            loadingBg.destroy();
+                            loadingText.destroy();
+                            this.scene.start('DuelHistoryScene');
+                        }, 2000);
+                        return;
+                    }
+                }
+                
+                // ФИКС: Если мы уже player2 - проверяем можно ли играть
+                if (isPlayer2) {
+                    if (duel.status === 'active' && duel.score2 === null) {
+                        // Можно играть!
+                        loadingText.setText('✅ Запуск игры...');
+                        setTimeout(() => {
+                            loadingBg.destroy();
+                            loadingText.destroy();
+                            this.scene.start('GameScene', {
+                                mode: 'duel',
+                                matchId: matchId,
+                                seed: duel.seed,
+                                isCreator: false,
+                                opponentUsername: duel.player1_username
+                            });
+                        }, 1500);
+                        return;
+                    } else {
+                        loadingText.setText('ℹ️ Вы уже сыграли в этой дуэли');
+                        setTimeout(() => {
+                            loadingBg.destroy();
+                            loadingText.destroy();
+                            this.scene.start('DuelHistoryScene');
+                        }, 2000);
+                        return;
+                    }
+                }
+                
+                // Мы не участник - пробуем принять дуэль
                 if (duel.status !== 'pending') {
                     loadingText.setText('❌ Дуэль уже началась или истекла');
                     setTimeout(() => {
@@ -515,7 +595,8 @@ class MenuScene extends Phaser.Scene {
                 }
                 
                 // Принимаем вызов
-                const userData = getTelegramUserId();
+                loadingText.setText('⏳ Принятие вызова...');
+                
                 const acceptResponse = await fetch(`${API_SERVER_URL}/api/duel/${matchId}/accept`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -544,6 +625,7 @@ class MenuScene extends Phaser.Scene {
                         mode: 'duel',
                         matchId: matchId,
                         seed: acceptData.seed,
+                        isCreator: false,
                         opponentUsername: duel.player1_username
                     });
                 }, 1500);
@@ -552,6 +634,9 @@ class MenuScene extends Phaser.Scene {
                 // Реферальная ссылка
                 const referrerId = finalParam.replace('ref_', '');
                 console.log('🎁 Referral link detected, referrer:', referrerId);
+                
+                // Сохраняем что обработали
+                sessionStorage.setItem('processed_duel_link', finalParam);
                 
                 const userData = getTelegramUserId();
                 
@@ -582,21 +667,10 @@ class MenuScene extends Phaser.Scene {
                 } catch (refError) {
                     console.error('❌ Referral error:', refError);
                 }
-            } else {
-                console.log('ℹ️ No deep link found');
-                
-                // ОТЛАДКА: Показываем alert если пользователь открыл из Telegram но параметра нет
-                if (tg && !finalParam) {
-                    console.log('⚠️ User opened from Telegram but no start_param found');
-                    
-                    // Показываем все что есть в initDataUnsafe
-                    const debugData = JSON.stringify(tg.initDataUnsafe, null, 2);
-                    console.log('Full initDataUnsafe:', debugData);
-                }
             }
         } catch (error) {
             console.error('❌ Deep link error:', error);
-            alert(`Failed to accept challenge: ${error.message}`);
+            // Не показываем alert - просто логируем
         }
     }
 }
