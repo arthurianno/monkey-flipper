@@ -1,4 +1,4 @@
-// ==================== MONKEY FLIPPER 1V1 SERVER ====================
+// ==================== CRYPTO MONKEY 1V1 SERVER ====================
 // Socket.IO сервер для управления матчмейкингом и игровыми комнатами
 
 const express = require('express');
@@ -325,7 +325,7 @@ io.on('connection', (socket) => {
 // Корневой маршрут - информация о сервере
 app.get('/', (req, res) => {
     res.json({
-        name: 'Monkey Flipper 1v1 Server',
+        name: 'Crypto Monkey 1v1 Server',
         status: 'running',
         version: '1.0.0',
         socketIO: 'active',
@@ -356,7 +356,7 @@ app.get('/api/health', (req, res) => {
 const PORT = process.env.PORT || 3000;
 
 server.listen(PORT, () => {
-    console.log(`🚀 Monkey Flipper 1v1 Server запущен на порту ${PORT}`);
+    console.log(`🚀 Crypto Monkey 1v1 Server запущен на порту ${PORT}`);
     console.log(`📊 Статистика: http://localhost:${PORT}/api/stats`);
 });
 

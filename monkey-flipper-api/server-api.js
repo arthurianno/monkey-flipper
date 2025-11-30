@@ -3060,7 +3060,7 @@ if (BOT_TOKEN && process.env.ENABLE_BOT_POLLING === 'true' && telegramStars.bot)
       
       // Fallback - просто кнопка
       await bot.sendMessage(userId, 
-        '🎮 Добро пожаловать в Monkey Flipper!',
+        '🎮 Добро пожаловать в Crypto Monkey!',
         {
           reply_markup: {
             inline_keyboard: [[
@@ -3156,7 +3156,7 @@ app.get('/api/shop/items', async (req, res) => {
 app.get('/tonconnect-manifest.json', (req, res) => {
   const manifest = {
     url: "https://monkey-flipper-djm1.onrender.com",
-    name: "Monkey Flipper",
+    name: "Crypto Monkey",
     iconUrl: "https://monkey-flipper-djm1.onrender.com/assets/icon-512.png"
   };
   
