@@ -1329,6 +1329,9 @@ app.post('/api/duel/:matchId/position', async (req, res) => {
     return res.status(400).json({ success: false, error: 'playerId, x, y required' });
   }
   
+  // ФИКС: Конвертируем playerId в строку для корректного сравнения
+  const playerIdStr = String(playerId);
+  
   try {
     const result = await pool.query('SELECT * FROM duels WHERE match_id = $1', [matchId]);
     
@@ -1337,26 +1340,30 @@ app.post('/api/duel/:matchId/position', async (req, res) => {
     }
     
     const duel = result.rows[0];
-    const isPlayer1 = duel.player1_id === playerId;
-    const isPlayer2 = duel.player2_id === playerId;
+    
+    // ФИКС: Сравниваем как строки
+    const isPlayer1 = String(duel.player1_id) === playerIdStr;
+    const isPlayer2 = String(duel.player2_id) === playerIdStr;
     
     if (!isPlayer1 && !isPlayer2) {
       return res.status(400).json({ success: false, error: 'Player not in this duel' });
     }
     
-    // Обновляем позицию
+    // ВАЖНО: НЕ обновляем score через position если игра уже завершена для этого игрока
+    // Score обновляется только через /complete endpoint
+    // Здесь обновляем только позицию для визуализации
     if (isPlayer1) {
       await pool.query(`
         UPDATE duels 
-        SET player1_x = $1, player1_y = $2, player1_alive = $3, score1 = $4, player1_last_update = NOW()
-        WHERE match_id = $5
-      `, [x, y, isAlive !== false, score || 0, matchId]);
+        SET player1_x = $1, player1_y = $2, player1_alive = $3, player1_last_update = NOW()
+        WHERE match_id = $4
+      `, [x, y, isAlive !== false, matchId]);
     } else {
       await pool.query(`
         UPDATE duels 
-        SET player2_x = $1, player2_y = $2, player2_alive = $3, score2 = $4, player2_last_update = NOW()
-        WHERE match_id = $5
-      `, [x, y, isAlive !== false, score || 0, matchId]);
+        SET player2_x = $1, player2_y = $2, player2_alive = $3, player2_last_update = NOW()
+        WHERE match_id = $4
+      `, [x, y, isAlive !== false, matchId]);
     }
     
     return res.json({ success: true });
@@ -1370,6 +1377,9 @@ app.post('/api/duel/:matchId/position', async (req, res) => {
 app.get('/api/duel/:matchId/opponent/:playerId', async (req, res) => {
   const { matchId, playerId } = req.params;
   
+  // ФИКС: Конвертируем playerId в строку
+  const playerIdStr = String(playerId);
+  
   try {
     const result = await pool.query('SELECT * FROM duels WHERE match_id = $1', [matchId]);
     
@@ -1378,8 +1388,10 @@ app.get('/api/duel/:matchId/opponent/:playerId', async (req, res) => {
     }
     
     const duel = result.rows[0];
-    const isPlayer1 = duel.player1_id === playerId;
-    const isPlayer2 = duel.player2_id === playerId;
+    
+    // ФИКС: Сравниваем как строки
+    const isPlayer1 = String(duel.player1_id) === playerIdStr;
+    const isPlayer2 = String(duel.player2_id) === playerIdStr;
     
     if (!isPlayer1 && !isPlayer2) {
       return res.status(400).json({ success: false, error: 'Player not in this duel' });
@@ -4810,6 +4822,61 @@ app.get('/api/debug/config', async (req, res) => {
   } catch (err) {
     console.error('Debug config error:', err);
     res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// Админский endpoint для исправления застрявших дуэлей
+app.post('/api/admin/fix-stuck-duel', async (req, res) => {
+  const { matchId, adminKey } = req.body;
+  
+  // Простая проверка админского ключа
+  if (adminKey !== process.env.ADMIN_KEY && adminKey !== 'monkey_admin_2024') {
+    return res.status(403).json({ success: false, error: 'Unauthorized' });
+  }
+  
+  try {
+    const result = await pool.query('SELECT * FROM duels WHERE match_id = $1', [matchId]);
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ success: false, error: 'Duel not found' });
+    }
+    
+    const duel = result.rows[0];
+    
+    // Проверяем что оба счета есть
+    if (duel.score1 === null || duel.score2 === null) {
+      return res.json({ 
+        success: false, 
+        error: 'Both scores must be set',
+        score1: duel.score1,
+        score2: duel.score2
+      });
+    }
+    
+    // Определяем победителя
+    const winner = duel.score1 > duel.score2 
+      ? duel.player1_id 
+      : duel.score2 > duel.score1
+        ? duel.player2_id
+        : 'draw';
+    
+    // Завершаем дуэль
+    await pool.query(`
+      UPDATE duels 
+      SET winner = $1, status = 'completed', completed_at = NOW()
+      WHERE match_id = $2
+    `, [winner, matchId]);
+    
+    return res.json({
+      success: true,
+      message: 'Duel fixed',
+      winner,
+      score1: duel.score1,
+      score2: duel.score2
+    });
+  } catch (err) {
+    console.error('Fix duel error:', err);
+    return res.status(500).json({ success: false, error: err.message });
   }
 });
 
