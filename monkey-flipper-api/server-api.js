@@ -1171,6 +1171,9 @@ app.post('/api/duel/:matchId/complete', async (req, res) => {
     return res.status(400).json({ success: false, error: 'playerId and score required' });
   }
   
+  // ФИКС: Конвертируем playerId в строку для корректного сравнения с БД
+  const playerIdStr = String(playerId);
+  
   try {
     const result = await pool.query('SELECT * FROM duels WHERE match_id = $1', [matchId]);
     
@@ -1179,6 +1182,16 @@ app.post('/api/duel/:matchId/complete', async (req, res) => {
     }
     
     const duel = result.rows[0];
+    
+    console.log('🔍 Duel complete check:', {
+      matchId,
+      playerId: playerIdStr,
+      player1_id: duel.player1_id,
+      player2_id: duel.player2_id,
+      status: duel.status,
+      score1: duel.score1,
+      score2: duel.score2
+    });
     
     // Проверяем статус дуэли
     if (duel.status !== 'active') {
@@ -1190,9 +1203,11 @@ app.post('/api/duel/:matchId/complete', async (req, res) => {
       });
     }
     
-    // Определяем какой игрок завершил
-    const isPlayer1 = duel.player1_id === playerId;
-    const isPlayer2 = duel.player2_id === playerId;
+    // ФИКС: Сравниваем как строки
+    const isPlayer1 = String(duel.player1_id) === playerIdStr;
+    const isPlayer2 = String(duel.player2_id) === playerIdStr;
+    
+    console.log('🔍 Player check:', { isPlayer1, isPlayer2 });
     
     if (!isPlayer1 && !isPlayer2) {
       return res.status(400).json({ success: false, error: 'Player not in this duel' });

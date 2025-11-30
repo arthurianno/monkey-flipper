@@ -2206,7 +2206,8 @@ class DuelHistoryScene extends Phaser.Scene {
             // Отображаем историю
             data.duels.forEach((duel, index) => {
                 const y = index * (cardHeight + cardGap) + 10;
-                const isPlayer1 = duel.player1_id === userId;
+                // ФИКС: Конвертируем в строки для корректного сравнения
+                const isPlayer1 = String(duel.player1_id) === String(userId);
                 const opponentName = isPlayer1 ? (duel.player2_username || '???') : duel.player1_username;
                 const myScore = isPlayer1 ? duel.score1 : duel.score2;
                 const opponentScore = isPlayer1 ? duel.score2 : duel.score1;
@@ -2241,7 +2242,8 @@ class DuelHistoryScene extends Phaser.Scene {
                         canPlay = true;
                     }
                 } else if (duel.status === 'completed') {
-                    const won = duel.winner === userId;
+                    // ФИКС: Конвертируем в строки для корректного сравнения
+                    const won = String(duel.winner) === String(userId);
                     const draw = duel.winner === 'draw';
                     statusIcon = won ? '🏆' : (draw ? '🤝' : '💔');
                     statusText = won ? 'Победа!' : (draw ? 'Ничья' : 'Поражение');
@@ -4164,7 +4166,8 @@ class GameScene extends Phaser.Scene {
     // Показать результаты дуэли
     showDuelResults(result) {
         const userData = getTelegramUserId();
-        const isPlayer1 = result.score1 !== null && result.score1 !== undefined;
+        // ФИКС: Определяем кто мы по isCreator флагу
+        const isPlayer1 = this.isCreator;
         const myScore = isPlayer1 ? result.score1 : result.score2;
         const opponentScore = isPlayer1 ? result.score2 : result.score1;
         
@@ -4172,13 +4175,13 @@ class GameScene extends Phaser.Scene {
         let statusColor = '#95a5a6';
         
         if (result.winner === 'draw') {
-            statusText = '🤝 DRAW!';
+            statusText = '🤝 НИЧЬЯ!';
             statusColor = '#f39c12';
-        } else if (result.winner === userData.id) {
-            statusText = '🏆 YOU WON!';
+        } else if (String(result.winner) === String(userData.id)) {
+            statusText = '🏆 ПОБЕДА!';
             statusColor = '#2ecc71';
         } else {
-            statusText = '😔 YOU LOST';
+            statusText = '😔 ПОРАЖЕНИЕ';
             statusColor = '#e74c3c';
         }
         
