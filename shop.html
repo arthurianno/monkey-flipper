@@ -1007,7 +1007,20 @@
                 if (!tonConnectUI) {
                     const connectOptions = {
                         manifestUrl: 'https://monkey-flipper-djm1.onrender.com/tonconnect-manifest.json',
-                        buttonRootId: null
+                        buttonRootId: null,
+                        // Настройки для Telegram Mini App - приоритет встроенным кошелькам
+                        walletsListConfiguration: {
+                            includeWallets: [
+                                'telegram-wallet',  // @wallet бот в Telegram
+                                'tonkeeper',
+                                'mytonwallet',
+                                'tonhub'
+                            ]
+                        },
+                        // Автоматическое определение Telegram окружения
+                        actionsConfiguration: {
+                            twaReturnUrl: window.location.href
+                        }
                     };
                     
                     // Добавляем настройку сети для testnet
@@ -1166,7 +1179,18 @@
                 if (!tonConnectUI && TonConnectUIClass) {
                     const connectOptions = {
                         manifestUrl: 'https://monkey-flipper-djm1.onrender.com/tonconnect-manifest.json',
-                        buttonRootId: null
+                        buttonRootId: null,
+                        walletsListConfiguration: {
+                            includeWallets: [
+                                'telegram-wallet',
+                                'tonkeeper',
+                                'mytonwallet',
+                                'tonhub'
+                            ]
+                        },
+                        actionsConfiguration: {
+                            twaReturnUrl: window.location.href
+                        }
                     };
                     
                     if (USE_TON_TESTNET) {
