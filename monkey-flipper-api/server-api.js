@@ -2953,7 +2953,7 @@ app.post('/api/shop/confirm-ton-payment', validateShopAuth, async (req, res) => 
     
     // Обновляем транзакцию как completed
     await pool.query(
-      'UPDATE transactions SET status = $1, updated_at = NOW() WHERE id = $2',
+      'UPDATE transactions SET status = $1 WHERE id = $2',
       ['completed', tx.id]
     );
     
