@@ -2825,6 +2825,66 @@ app.post('/api/shop/create-ton-transaction', validateShopAuth, async (req, res) 
 });
 
 /**
+ * ADMIN: Ручное подтверждение TON покупки (если транзакция прошла но не подтвердилась)
+ * POST /api/admin/confirm-ton-purchase
+ */
+app.post('/api/admin/confirm-ton-purchase', async (req, res) => {
+  try {
+    const { userId, itemId, txHash } = req.body;
+    
+    if (!userId || !itemId) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'userId и itemId обязательны' 
+      });
+    }
+    
+    // Загружаем товар
+    const shopItems = JSON.parse(fs.readFileSync('./shop-items.json', 'utf8'));
+    const allItems = [...shopItems.skins, ...shopItems.nft_characters, ...shopItems.boosts];
+    const item = allItems.find(i => i.id === itemId);
+    
+    if (!item) {
+      return res.status(404).json({ 
+        success: false, 
+        error: 'Товар не найден' 
+      });
+    }
+    
+    // Создаем запись о покупке напрямую
+    const purchaseId = crypto.randomUUID();
+    await pool.query(`
+      INSERT INTO purchases (id, user_id, item_id, item_name, price, currency, status, purchased_at)
+      VALUES ($1, $2, $3, $4, $5, 'TON', 'active', NOW())
+      ON CONFLICT (user_id, item_id) DO UPDATE SET 
+        status = 'active',
+        purchased_at = NOW()
+    `, [purchaseId, userId, itemId, item.name, item.priceTON || 0]);
+    
+    console.log(`✅ ADMIN: TON покупка подтверждена вручную: user ${userId}, item ${itemId}, price ${item.priceTON} TON, txHash: ${txHash || 'N/A'}`);
+    
+    res.json({
+      success: true,
+      message: 'Покупка подтверждена',
+      purchase: {
+        id: purchaseId,
+        itemId,
+        itemName: item.name,
+        price: item.priceTON,
+        currency: 'TON'
+      }
+    });
+    
+  } catch (error) {
+    console.error('❌ Ошибка ручного подтверждения:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: error.message 
+    });
+  }
+});
+
+/**
  * Подтвердить TON платеж (вызывается после успешной транзакции)
  * POST /api/shop/confirm-ton-payment
  */

@@ -1073,8 +1073,14 @@
 
             try {
                 console.log('📤 Calling tonConnectUI.sendTransaction...');
+                console.log('📤 Transaction data:', JSON.stringify(transaction, null, 2));
+                
                 const result = await tonConnectUI.sendTransaction(transaction);
-                console.log('TON Transaction result:', result);
+                console.log('✅ TON Transaction result:', JSON.stringify(result, null, 2));
+
+                // Извлекаем boc из результата (может быть разный формат)
+                const txHash = result?.boc || result?.hash || result?.transactionHash || JSON.stringify(result);
+                console.log('📤 Sending confirm with txHash:', txHash);
 
                 // Подтверждаем платеж на сервере
                 const confirmResponse = await fetch(`${API_URL}/api/shop/confirm-ton-payment`, {
@@ -1086,11 +1092,20 @@
                     body: JSON.stringify({
                         userId: userId,
                         transactionId: transactionId,
-                        txHash: result.boc
+                        txHash: txHash
                     })
                 });
 
+                console.log('📥 Confirm response status:', confirmResponse.status);
+                
+                if (!confirmResponse.ok) {
+                    const errorText = await confirmResponse.text();
+                    console.error('❌ Server error:', errorText);
+                    throw new Error(`Server error: ${confirmResponse.status} - ${errorText}`);
+                }
+
                 const confirmData = await confirmResponse.json();
+                console.log('📥 Confirm data:', confirmData);
 
                 if (confirmData.success) {
                     if (tg?.HapticFeedback) {
