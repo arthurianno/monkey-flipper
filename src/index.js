@@ -46,7 +46,7 @@ const TON_CONFIG = {
     // Тестовый кошелёк для testnet (можно получить тестовые TON с https://t.me/testgiver_ton_bot)
     testnetWallet: '0QAkREz-sW6GI8SJPX8eUB4n5E3IKo4h1akmQmNBxPRTfkJh',
     // Mainnet кошелёк (продакшн)
-    mainnetWallet: process.env?.TON_WALLET_ADDRESS || 'UQD-your-mainnet-wallet'
+    mainnetWallet: 'UQD-your-mainnet-wallet'
 };
 
 console.log(`💎 TON Network: ${TON_CONFIG.network.toUpperCase()}`);
@@ -5764,7 +5764,8 @@ class WalletScene extends Phaser.Scene {
             
             // Добавляем параметр сети для testnet
             if (USE_TON_TESTNET) {
-                tonConnectOptions.network = CHAIN.TESTNET;
+                // Для testnet используем строку 'testnet'
+                tonConnectOptions.network = 'testnet';
                 console.log('💎 TON Connect: Используется TESTNET');
             }
             
