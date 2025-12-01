@@ -6040,7 +6040,13 @@ class WalletScene extends Phaser.Scene {
         try {
             // Отключаем через TON Connect UI если есть
             if (this.tonConnectUI) {
-                await this.tonConnectUI.disconnect();
+                try {
+                    await this.tonConnectUI.disconnect();
+                    console.log('✅ TON Connect отключён');
+                } catch (tonError) {
+                    // Игнорируем ошибки TON Connect - продолжаем удаление с сервера
+                    console.log('⚠️ TON Connect disconnect error (игнорируем):', tonError.message);
+                }
             }
 
             // Удаляем с сервера
@@ -6053,14 +6059,17 @@ class WalletScene extends Phaser.Scene {
             const data = await response.json();
 
             if (data.success) {
-                console.log('✅ Кошелёк отключён');
+                console.log('✅ Кошелёк отключён на сервере');
                 this.scene.restart();
             } else {
-                this.showError('Ошибка отключения');
+                // Даже если сервер вернул ошибку, перезагружаем сцену
+                console.warn('⚠️ Сервер вернул:', data.error);
+                this.scene.restart();
             }
         } catch (error) {
             console.error('❌ Ошибка отключения:', error);
-            this.showError('Ошибка соединения');
+            // Всё равно перезагружаем сцену - возможно кошелёк уже отключён
+            this.scene.restart();
         }
     }
 
