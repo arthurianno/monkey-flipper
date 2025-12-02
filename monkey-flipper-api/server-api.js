@@ -281,6 +281,13 @@ const gameResultLimiter = rateLimit({
         IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='duels' AND column_name='player2_last_update') THEN
           ALTER TABLE duels ADD COLUMN player2_last_update TIMESTAMP;
         END IF;
+        -- Колонки для времени завершения игры каждым игроком (для таймаута)
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='duels' AND column_name='player1_finished_at') THEN
+          ALTER TABLE duels ADD COLUMN player1_finished_at TIMESTAMP;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='duels' AND column_name='player2_finished_at') THEN
+          ALTER TABLE duels ADD COLUMN player2_finished_at TIMESTAMP;
+        END IF;
       END $$;
     `);
     
@@ -1223,11 +1230,12 @@ app.post('/api/duel/:matchId/complete', async (req, res) => {
       });
     }
     
-    // Обновляем счет игрока
+    // Обновляем счет игрока и время завершения
+    const now = new Date();
     if (isPlayer1) {
-      await pool.query('UPDATE duels SET score1 = $1 WHERE match_id = $2', [score, matchId]);
+      await pool.query('UPDATE duels SET score1 = $1, player1_finished_at = $2 WHERE match_id = $3', [score, now, matchId]);
     } else {
-      await pool.query('UPDATE duels SET score2 = $1 WHERE match_id = $2', [score, matchId]);
+      await pool.query('UPDATE duels SET score2 = $1, player2_finished_at = $2 WHERE match_id = $3', [score, now, matchId]);
     }
     
     // Проверяем, оба ли игрока завершили
@@ -1256,11 +1264,56 @@ app.post('/api/duel/:matchId/complete', async (req, res) => {
         score2: updatedDuel.score2
       });
     } else {
-      // Только один игрок завершил
+      // Только один игрок завершил - запускаем таймаут для второго
+      // Второй игрок должен завершить в течение 60 секунд
+      const DUEL_TIMEOUT_MS = 60000; // 60 секунд
+      
+      setTimeout(async () => {
+        try {
+          // Перепроверяем дуэль
+          const checkResult = await pool.query('SELECT * FROM duels WHERE match_id = $1', [matchId]);
+          if (checkResult.rows.length === 0) return;
+          
+          const checkDuel = checkResult.rows[0];
+          
+          // Если дуэль ещё не завершена и один из игроков не отправил score
+          if (checkDuel.status === 'active') {
+            let winner;
+            let finalScore1 = checkDuel.score1;
+            let finalScore2 = checkDuel.score2;
+            
+            if (checkDuel.score1 === null && checkDuel.score2 !== null) {
+              // Player1 не сыграл - проигрыш (score = 0)
+              finalScore1 = 0;
+              winner = checkDuel.player2_id;
+              console.log(`⏰ Таймаут: Player1 не сыграл, победил Player2`);
+            } else if (checkDuel.score2 === null && checkDuel.score1 !== null) {
+              // Player2 не сыграл - проигрыш (score = 0)
+              finalScore2 = 0;
+              winner = checkDuel.player1_id;
+              console.log(`⏰ Таймаут: Player2 не сыграл, победил Player1`);
+            } else {
+              return; // Оба уже сыграли или оба не сыграли
+            }
+            
+            await pool.query(`
+              UPDATE duels 
+              SET score1 = $1, score2 = $2, winner = $3, status = 'completed', completed_at = NOW()
+              WHERE match_id = $4
+            `, [finalScore1, finalScore2, winner, matchId]);
+            
+            console.log(`✅ Дуэль ${matchId} завершена по таймауту. Победитель: ${winner}`);
+          }
+        } catch (err) {
+          console.error('Duel timeout error:', err);
+        }
+      }, DUEL_TIMEOUT_MS);
+      
       return res.json({ 
         success: true, 
         completed: false,
-        message: 'Waiting for opponent'
+        message: 'Waiting for opponent (60 sec timeout)',
+        timeoutSec: 60
       });
     }
   } catch (err) {

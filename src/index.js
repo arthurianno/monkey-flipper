@@ -4160,7 +4160,7 @@ class GameScene extends Phaser.Scene {
         this.add.text(
             CONSTS.WIDTH / 2,
             CONSTS.HEIGHT / 2,
-            '⏳ Ожидание результата соперника...',
+            '⏳ Ожидание соперника...',
             {
                 fontSize: '16px',
                 fill: '#FFFFFF',
@@ -4169,32 +4169,52 @@ class GameScene extends Phaser.Scene {
             }
         ).setOrigin(0.5).setScrollFactor(0).setDepth(201);
         
-        // Анимация точек
-        const dotsText = this.add.text(
+        // НОВОЕ: Таймер обратного отсчёта (60 секунд)
+        let secondsLeft = 60;
+        const timerText = this.add.text(
             CONSTS.WIDTH / 2,
-            CONSTS.HEIGHT / 2 + 40,
-            '.',
+            CONSTS.HEIGHT / 2 + 35,
+            `⏱️ ${secondsLeft} сек`,
             {
-                fontSize: '36px',
+                fontSize: '20px',
                 fill: '#FFD700',
                 fontFamily: 'Arial Black'
             }
         ).setOrigin(0.5).setScrollFactor(0).setDepth(201);
         
-        let dotCount = 1;
-        const dotsTimer = this.time.addEvent({
-            delay: 500,
+        // Подсказка
+        this.add.text(
+            CONSTS.WIDTH / 2,
+            CONSTS.HEIGHT / 2 + 65,
+            '(автопобеда если соперник не доиграет)',
+            {
+                fontSize: '12px',
+                fill: '#888888',
+                fontFamily: 'Arial'
+            }
+        ).setOrigin(0.5).setScrollFactor(0).setDepth(201);
+        
+        // Таймер каждую секунду
+        const countdownTimer = this.time.addEvent({
+            delay: 1000,
             loop: true,
             callback: () => {
-                dotCount = (dotCount % 3) + 1;
-                dotsText.setText('.'.repeat(dotCount));
+                secondsLeft--;
+                if (secondsLeft > 0) {
+                    timerText.setText(`⏱️ ${secondsLeft} сек`);
+                    if (secondsLeft <= 10) {
+                        timerText.setColor('#FF6B6B'); // Красный когда мало времени
+                    }
+                } else {
+                    timerText.setText('⏱️ Время вышло!');
+                }
             }
         });
         
         // Кнопка "В меню"
         const menuBtn = this.add.rectangle(
             CONSTS.WIDTH / 2,
-            CONSTS.HEIGHT / 2 + 120,
+            CONSTS.HEIGHT / 2 + 130,
             200,
             50,
             0x2196F3
@@ -4202,7 +4222,7 @@ class GameScene extends Phaser.Scene {
         
         this.add.text(
             CONSTS.WIDTH / 2,
-            CONSTS.HEIGHT / 2 + 120,
+            CONSTS.HEIGHT / 2 + 130,
             '← В меню',
             {
                 fontSize: '18px',
@@ -4212,7 +4232,7 @@ class GameScene extends Phaser.Scene {
         ).setOrigin(0.5).setScrollFactor(0).setDepth(202);
         
         menuBtn.on('pointerdown', () => {
-            dotsTimer.remove();
+            countdownTimer.remove();
             if (this.checkTimer) this.checkTimer.remove();
             this.scene.stop('GameScene');
             this.scene.start('MenuScene');
@@ -4228,8 +4248,8 @@ class GameScene extends Phaser.Scene {
                     const data = await response.json();
                     
                     if (data.duel.status === 'completed') {
-                        // Оба игрока завершили!
-                        dotsTimer.remove();
+                        // Оба игрока завершили (или таймаут)!
+                        countdownTimer.remove();
                         this.checkTimer.remove();
                         
                         const result = {
