@@ -2773,34 +2773,26 @@ class GameScene extends Phaser.Scene {
         const bgCenterX = CONSTS.WIDTH / 2;
         const bgCenterY = CONSTS.HEIGHT / 2;
         
-        // scrollFactor 0.4 - фон двигается медленно (40% от скорости камеры)
-        // Это позволяет уменьшить масштаб и показать больше деталей
+        // scrollFactor 0.3 - фон двигается медленно (30% от скорости камеры)
+        // Медленное движение позволяет использовать меньший масштаб
         this.backgroundLayers = {
-            back1: this.add.image(bgCenterX, bgCenterY, 'back_1').setOrigin(0.5, 0.5).setScrollFactor(0.4, 0.4),
-            back2: this.add.image(bgCenterX, bgCenterY, 'back_2').setOrigin(0.5, 0.5).setScrollFactor(0.4, 0.4),
-            back3: this.add.image(bgCenterX, bgCenterY, 'back_3').setOrigin(0.5, 0.5).setScrollFactor(0.4, 0.4),
-            back4: this.add.image(bgCenterX, bgCenterY, 'back_4').setOrigin(0.5, 0.5).setScrollFactor(0.4, 0.4)
+            back1: this.add.image(bgCenterX, bgCenterY, 'back_1').setOrigin(0.5, 0.5).setScrollFactor(0.3, 0.3),
+            back2: this.add.image(bgCenterX, bgCenterY, 'back_2').setOrigin(0.5, 0.5).setScrollFactor(0.3, 0.3),
+            back3: this.add.image(bgCenterX, bgCenterY, 'back_3').setOrigin(0.5, 0.5).setScrollFactor(0.3, 0.3),
+            back4: this.add.image(bgCenterX, bgCenterY, 'back_4').setOrigin(0.5, 0.5).setScrollFactor(0.3, 0.3)
         };
         
-        // Идеальное масштабирование с сохранением пропорций
+        // CONTAIN режим - показываем ВСЁ изображение полностью (1080x1290)
         Object.values(this.backgroundLayers).forEach(layer => {
-            const textureWidth = layer.texture.width;
-            const textureHeight = layer.texture.height;
-            const textureRatio = textureWidth / textureHeight;
-            const screenRatio = CONSTS.WIDTH / CONSTS.HEIGHT;
+            const textureWidth = layer.texture.width;  // 1080
+            const textureHeight = layer.texture.height; // 1290
             
-            let scale;
-            if (textureRatio > screenRatio) {
-                // Фон шире экрана - масштабируем по высоте
-                scale = CONSTS.HEIGHT / textureHeight;
-            } else {
-                // Фон выше экрана - масштабируем по ширине
-                scale = CONSTS.WIDTH / textureWidth;
-            }
+            // Рассчитываем масштабы для ширины и высоты
+            const scaleX = CONSTS.WIDTH / textureWidth;
+            const scaleY = CONSTS.HEIGHT / textureHeight;
             
-            // Минимальное увеличение 1.05x - показываем почти весь фон
-            // Так как scrollFactor маленький (0.4), фон не закончится при прыжках
-            scale *= 0.1;
+            // CONTAIN: берем МЕНЬШИЙ масштаб чтобы всё изображение поместилось
+            const scale = Math.min(scaleX, scaleY) * 1.3; // 1.3x для запаса при параллаксе
             
             layer.setScale(scale);
             layer.setDepth(-10); // Самый задний слой
@@ -5006,22 +4998,15 @@ class GameScene extends Phaser.Scene {
             Object.values(this.backgroundLayers).forEach(layer => {
                 layer.setPosition(width / 2, height / 2);
                 
-                const textureWidth = layer.texture.width;
-                const textureHeight = layer.texture.height;
-                const textureRatio = textureWidth / textureHeight;
-                const screenRatio = width / height;
+                const textureWidth = layer.texture.width;  // 1080
+                const textureHeight = layer.texture.height; // 1290
                 
-                let scale;
-                if (textureRatio > screenRatio) {
-                    // Фон шире экрана - масштабируем по высоте
-                    scale = height / textureHeight;
-                } else {
-                    // Фон выше экрана - масштабируем по ширине
-                    scale = width / textureWidth;
-                }
+                // Рассчитываем масштабы для ширины и высоты
+                const scaleX = width / textureWidth;
+                const scaleY = height / textureHeight;
                 
-                // Минимальное увеличение для покрытия при параллаксе
-                scale *= 1.05;
+                // CONTAIN: берем МЕНЬШИЙ масштаб чтобы всё изображение поместилось
+                const scale = Math.min(scaleX, scaleY) * 1.3; // 1.3x для запаса при параллаксе
                 
                 layer.setScale(scale);
             });
