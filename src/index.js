@@ -2773,17 +2773,17 @@ class GameScene extends Phaser.Scene {
         const bgCenterX = CONSTS.WIDTH / 2;
         const bgCenterY = CONSTS.HEIGHT / 2;
         
+        // scrollFactor 0.7 - фон двигается медленнее но не сильно, поэтому не нужен огромный размер
         this.backgroundLayers = {
-            back1: this.add.image(bgCenterX, bgCenterY, 'back_1').setOrigin(0.5, 0.5).setScrollFactor(0.3, 0.3),
-            back2: this.add.image(bgCenterX, bgCenterY, 'back_2').setOrigin(0.5, 0.5).setScrollFactor(0.3, 0.3),
-            back3: this.add.image(bgCenterX, bgCenterY, 'back_3').setOrigin(0.5, 0.5).setScrollFactor(0.3, 0.3),
-            back4: this.add.image(bgCenterX, bgCenterY, 'back_4').setOrigin(0.5, 0.5).setScrollFactor(0.3, 0.3)
+            back1: this.add.image(bgCenterX, bgCenterY, 'back_1').setOrigin(0.5, 0.5).setScrollFactor(0.7, 0.7),
+            back2: this.add.image(bgCenterX, bgCenterY, 'back_2').setOrigin(0.5, 0.5).setScrollFactor(0.7, 0.7),
+            back3: this.add.image(bgCenterX, bgCenterY, 'back_3').setOrigin(0.5, 0.5).setScrollFactor(0.7, 0.7),
+            back4: this.add.image(bgCenterX, bgCenterY, 'back_4').setOrigin(0.5, 0.5).setScrollFactor(0.7, 0.7)
         };
         
-        // Масштабируем фон с сохранением пропорций - просто делаем его больше
+        // Минимальный масштаб 1.2 - фон немного больше экрана для покрытия при параллаксе
         Object.values(this.backgroundLayers).forEach(layer => {
-            // Масштаб 2.5 - достаточно чтобы покрыть экран при параллаксе
-            layer.setScale(2.5);
+            layer.setScale(1.2);
             layer.setDepth(-10); // Самый задний слой
         });
         
@@ -4986,10 +4986,10 @@ class GameScene extends Phaser.Scene {
         if (this.backgroundLayers) {
             Object.values(this.backgroundLayers).forEach(layer => {
                 layer.setPosition(width / 2, height / 2);
-                // Можно динамически подстраивать масштаб под размер окна
-                const scaleX = (width / layer.texture.width) * 2.5;
-                const scaleY = (height / layer.texture.height) * 2.5;
-                const scale = Math.max(scaleX, scaleY); // Берем больший масштаб чтобы покрыть экран
+                // Небольшой масштаб для покрытия экрана
+                const scaleX = (width / layer.texture.width) * 1.3;
+                const scaleY = (height / layer.texture.height) * 1.3;
+                const scale = Math.max(scaleX, scaleY, 1.2); // Минимум 1.2
                 layer.setScale(scale);
             });
         }
