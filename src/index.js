@@ -2793,7 +2793,7 @@ class GameScene extends Phaser.Scene {
             const scaleY = CONSTS.HEIGHT / textureHeight;  // например 800/1290 = 0.62
             
             // Берем меньший масштаб (contain) и уменьшаем/увеличиваем для оптимального вида
-            const baseScale = Math.min(scaleX, scaleY);
+            const baseScale = height / textureHeight;
             const scale = baseScale * 1.0; // 0.8 - показываем чуть больше чем экран
             
             layer.setScale(scale);
