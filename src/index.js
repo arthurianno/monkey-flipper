@@ -2773,12 +2773,13 @@ class GameScene extends Phaser.Scene {
         const bgCenterX = CONSTS.WIDTH / 2;
         const bgCenterY = CONSTS.HEIGHT / 2;
         
-        // scrollFactor 0.7 - фон двигается медленнее но не сильно
+        // scrollFactor 0.4 - фон двигается медленно (40% от скорости камеры)
+        // Это позволяет уменьшить масштаб и показать больше деталей
         this.backgroundLayers = {
-            back1: this.add.image(bgCenterX, bgCenterY, 'back_1').setOrigin(0.5, 0.5).setScrollFactor(0.7, 0.7),
-            back2: this.add.image(bgCenterX, bgCenterY, 'back_2').setOrigin(0.5, 0.5).setScrollFactor(0.7, 0.7),
-            back3: this.add.image(bgCenterX, bgCenterY, 'back_3').setOrigin(0.5, 0.5).setScrollFactor(0.7, 0.7),
-            back4: this.add.image(bgCenterX, bgCenterY, 'back_4').setOrigin(0.5, 0.5).setScrollFactor(0.7, 0.7)
+            back1: this.add.image(bgCenterX, bgCenterY, 'back_1').setOrigin(0.5, 0.5).setScrollFactor(0.4, 0.4),
+            back2: this.add.image(bgCenterX, bgCenterY, 'back_2').setOrigin(0.5, 0.5).setScrollFactor(0.4, 0.4),
+            back3: this.add.image(bgCenterX, bgCenterY, 'back_3').setOrigin(0.5, 0.5).setScrollFactor(0.4, 0.4),
+            back4: this.add.image(bgCenterX, bgCenterY, 'back_4').setOrigin(0.5, 0.5).setScrollFactor(0.4, 0.4)
         };
         
         // Идеальное масштабирование с сохранением пропорций
@@ -2797,8 +2798,9 @@ class GameScene extends Phaser.Scene {
                 scale = CONSTS.WIDTH / textureWidth;
             }
             
-            // Небольшое увеличение для покрытия при параллаксе (1.2x вместо 1.5x)
-            scale *= 2;
+            // Минимальное увеличение 1.05x - показываем почти весь фон
+            // Так как scrollFactor маленький (0.4), фон не закончится при прыжках
+            scale *= 1.05;
             
             layer.setScale(scale);
             layer.setDepth(-10); // Самый задний слой
@@ -5018,8 +5020,8 @@ class GameScene extends Phaser.Scene {
                     scale = width / textureWidth;
                 }
                 
-                // Небольшое увеличение для покрытия при параллаксе
-                scale *= 1.2;
+                // Минимальное увеличение для покрытия при параллаксе
+                scale *= 1.05;
                 
                 layer.setScale(scale);
             });
