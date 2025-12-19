@@ -2782,8 +2782,9 @@ class GameScene extends Phaser.Scene {
         };
         
         // setDisplaySize - растягивает фон на весь экран (как было изначально!)
+        // УВЕЛИЧИЛИ высоту x5 чтобы фон не заканчивался при параллаксе!
         Object.values(this.backgroundLayers).forEach(layer => {
-            layer.setDisplaySize(CONSTS.WIDTH, CONSTS.HEIGHT * 1.5);
+            layer.setDisplaySize(CONSTS.WIDTH, CONSTS.HEIGHT * 5);
             layer.setDepth(-10);
         });
         
@@ -4982,23 +4983,11 @@ class GameScene extends Phaser.Scene {
         const camera = this.cameras.main;
         camera.setSize(width, height);
         
-        // Обновляем фон под новый размер с идеальными пропорциями
+        // Обновляем фон под новый размер
         if (this.backgroundLayers) {
             Object.values(this.backgroundLayers).forEach(layer => {
                 layer.setPosition(width / 2, height / 2);
-                
-                const textureWidth = layer.texture.width;  // 1080
-                const textureHeight = layer.texture.height; // 1290
-                
-                // Рассчитываем какой масштаб нужен чтобы покрыть экран
-                const scaleX = width / textureWidth;
-                const scaleY = height / textureHeight;
-                
-                // Берем меньший масштаб (contain) и уменьшаем/увеличиваем для оптимального вида
-                const baseScale = Math.min(scaleX, scaleY);
-                const scale = baseScale * 0.8; // 0.8 - показываем чуть больше чем экран
-                
-                layer.setScale(scale);
+                layer.setDisplaySize(width, height * 5); // x5 для параллакса
             });
         }
         
