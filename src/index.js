@@ -2769,16 +2769,17 @@ class GameScene extends Phaser.Scene {
 
         // НОВОЕ: Многослойная система фона с плавными переходами
         // Создаем 4 слоя фона, которые будут плавно переключаться в зависимости от высоты
+        // scrollFactor = 0.3 создает эффект параллакса (фон двигается медленнее чем игрок)
         this.backgroundLayers = {
-            back1: this.add.image(0, 0, 'back_1').setOrigin(0, 0).setScrollFactor(0),
-            back2: this.add.image(0, 0, 'back_2').setOrigin(0, 0).setScrollFactor(0),
-            back3: this.add.image(0, 0, 'back_3').setOrigin(0, 0).setScrollFactor(0),
-            back4: this.add.image(0, 0, 'back_4').setOrigin(0, 0).setScrollFactor(0)
+            back1: this.add.image(0, 0, 'back_1').setOrigin(0, 0).setScrollFactor(0.3, 0.3),
+            back2: this.add.image(0, 0, 'back_2').setOrigin(0, 0).setScrollFactor(0.3, 0.3),
+            back3: this.add.image(0, 0, 'back_3').setOrigin(0, 0).setScrollFactor(0.3, 0.3),
+            back4: this.add.image(0, 0, 'back_4').setOrigin(0, 0).setScrollFactor(0.3, 0.3)
         };
         
-        // Растягиваем все слои на весь экран
+        // Растягиваем все слои на весь экран (можно сделать больше для параллакса)
         Object.values(this.backgroundLayers).forEach(layer => {
-            layer.setDisplaySize(CONSTS.WIDTH, CONSTS.HEIGHT);
+            layer.setDisplaySize(CONSTS.WIDTH, CONSTS.HEIGHT * 3); // Увеличиваем высоту для параллакса
             layer.setDepth(-10); // Самый задний слой
         });
         
@@ -4977,10 +4978,10 @@ class GameScene extends Phaser.Scene {
         const camera = this.cameras.main;
         camera.setSize(width, height);
         
-        // Обновляем фон под новый размер - НОВОЕ: обновляем все слои
+        // Обновляем фон под новый размер - НОВОЕ: обновляем все слои с учетом параллакса
         if (this.backgroundLayers) {
             Object.values(this.backgroundLayers).forEach(layer => {
-                layer.setDisplaySize(width, height);
+                layer.setDisplaySize(width, height * 3); // Увеличиваем высоту для параллакса
             });
         }
         
