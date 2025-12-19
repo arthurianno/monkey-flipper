@@ -2768,20 +2768,20 @@ class GameScene extends Phaser.Scene {
         this.playerStartY = 0; // НОВОЕ: Сброс стартовой позиции
 
         // НОВОЕ: Многослойная система фона с плавными переходами
-        // Фон движется за обезьяной с эффектом параллакса (scrollFactor < 1)
+        // Фон с эффектом плавного движения вниз для живости
         const bgCenterX = CONSTS.WIDTH / 2;
         const bgCenterY = CONSTS.HEIGHT / 2;
         
         this.backgroundLayers = {
-            back1: this.add.image(bgCenterX, bgCenterY, 'back_1').setOrigin(0.5, 0.5).setScrollFactor(0.3),
-            back2: this.add.image(bgCenterX, bgCenterY, 'back_2').setOrigin(0.5, 0.5).setScrollFactor(0.35),
-            back3: this.add.image(bgCenterX, bgCenterY, 'back_3').setOrigin(0.5, 0.5).setScrollFactor(0.4),
-            back4: this.add.image(bgCenterX, bgCenterY, 'back_4').setOrigin(0.5, 0.5).setScrollFactor(0.45)
+            back1: this.add.image(bgCenterX, bgCenterY, 'back_1').setOrigin(0.5, 0.5).setScrollFactor(0),
+            back2: this.add.image(bgCenterX, bgCenterY, 'back_2').setOrigin(0.5, 0.5).setScrollFactor(0),
+            back3: this.add.image(bgCenterX, bgCenterY, 'back_3').setOrigin(0.5, 0.5).setScrollFactor(0),
+            back4: this.add.image(bgCenterX, bgCenterY, 'back_4').setOrigin(0.5, 0.5).setScrollFactor(0)
         };
         
-        // Увеличиваем фон по вертикали в 5 раз, чтобы покрывал всю высоту игры
+        // Просто растягиваем фон на весь экран - КАК БЫЛО ИЗНАЧАЛЬНО
         Object.values(this.backgroundLayers).forEach(layer => {
-            layer.setDisplaySize(CONSTS.WIDTH, CONSTS.HEIGHT * 5);
+            layer.setDisplaySize(CONSTS.WIDTH, CONSTS.HEIGHT);
             layer.setDepth(-10);
         });
         
@@ -2793,6 +2793,7 @@ class GameScene extends Phaser.Scene {
         
         // Переменные для управления переходами фона
         this.currentBackgroundHeight = 0; // Текущая высота игрока для расчета переходов
+        this.bgAnimOffset = 0; // Смещение для анимации фона
 
         // ФИКС: Более заметный счетчик (белый с черной обводкой)
         this.scoreText = this.add.text(16, 16, `Score: ${this.score}`, { 
@@ -4624,6 +4625,18 @@ class GameScene extends Phaser.Scene {
     // НОВОЕ: Функция плавного перехода между слоями фона
     updateBackgroundTransitions() {
         if (!this.backgroundLayers || !this.player) return;
+        
+        // НОВОЕ: Добавляем плавное движение фона вниз для живого эффекта
+        this.bgAnimOffset += 0.5; // Скорость движения
+        if (this.bgAnimOffset > CONSTS.HEIGHT) {
+            this.bgAnimOffset = 0; // Сброс для зацикливания
+        }
+        
+        // Применяем смещение к Y позиции фона с синусоидальным эффектом для плавности
+        const bgCenterY = CONSTS.HEIGHT / 2 + Math.sin(this.bgAnimOffset * 0.01) * 20;
+        Object.values(this.backgroundLayers).forEach(layer => {
+            layer.y = bgCenterY;
+        });
         
         // Определяем высоту игрока (чем выше прыгнул - тем больше высота)
         // playerStartY устанавливается при создании игрока
