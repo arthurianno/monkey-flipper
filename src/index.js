@@ -223,6 +223,30 @@ const CONSTS = {
 // ФИКС: DPI для четкого текста на Retina дисплеях
 const DPR = Math.min(window.devicePixelRatio || 1, 2);
 
+// Утилита: масштабирует фон без искажения пропорций
+// mode = 'cover' закрывает весь экран без черных полос (часть фона может обрезаться)
+// mode = 'contain' показывает весь фон, но могут появляться полосы
+function fitBackgroundToScreen(image, width, height, options = {}) {
+    if (!image || !image.texture || !image.texture.getSourceImage) return;
+
+    const source = image.texture.getSourceImage();
+    const texWidth = source?.width || image.width;
+    const texHeight = source?.height || image.height;
+
+    const scaleX = width / texWidth;
+    const scaleY = height / texHeight;
+    const mode = options.mode === 'contain' ? 'contain' : 'cover';
+    const baseScale = mode === 'cover' ? Math.max(scaleX, scaleY) : Math.min(scaleX, scaleY);
+    const scaleMultiplier = options.scale || 1;
+
+    image.setScale(baseScale * scaleMultiplier);
+
+    // Центруем фон, если origin не (0,0)
+    if (options.center !== false) {
+        image.setPosition(width * image.originX, height * image.originY);
+    }
+}
+
 class MenuScene extends Phaser.Scene {
     constructor() {
         super({ key: 'MenuScene' });
@@ -242,9 +266,9 @@ class MenuScene extends Phaser.Scene {
         // НОВОЕ: Проверка deep link для автоматического принятия дуэли
         this.checkDeepLink();
         
-        // Фон с растяжкой (stretch) без повторения, как в GameScene
-        this.background = this.add.image(0, 0, 'background_img_menu').setOrigin(0, 0);
-        this.background.setDisplaySize(CONSTS.WIDTH, CONSTS.HEIGHT);
+        // Фон без искажений (cover)
+        this.background = this.add.image(CONSTS.WIDTH / 2, CONSTS.HEIGHT / 2, 'background_img_menu').setOrigin(0.5);
+        fitBackgroundToScreen(this.background, CONSTS.WIDTH, CONSTS.HEIGHT, { mode: 'cover' });
 
         // НОВОЕ: Отладочная информация о Telegram пользователе
         const userData = getTelegramUserId();
@@ -690,9 +714,9 @@ class LeaderboardScene extends Phaser.Scene {
     }
     
     create() {
-        // Фон
-        this.background = this.add.image(0, 0, 'background_img').setOrigin(0, 0);
-        this.background.setDisplaySize(CONSTS.WIDTH, CONSTS.HEIGHT);
+        // Фон без растяжения
+        this.background = this.add.image(CONSTS.WIDTH / 2, CONSTS.HEIGHT / 2, 'background_img').setOrigin(0.5);
+        fitBackgroundToScreen(this.background, CONSTS.WIDTH, CONSTS.HEIGHT, { mode: 'cover' });
         
         // Заголовок - КОМПАКТНЕЕ
         this.add.text(CONSTS.WIDTH / 2, 40, '🏆 РЕЙТИНГ', {
@@ -845,8 +869,8 @@ class TournamentScene extends Phaser.Scene {
         const userData = getTelegramUserId();
 
         // Фон
-        this.background = this.add.image(0, 0, 'background_img_menu').setOrigin(0, 0);
-        this.background.setDisplaySize(CONSTS.WIDTH, CONSTS.HEIGHT);
+        this.background = this.add.image(CONSTS.WIDTH / 2, CONSTS.HEIGHT / 2, 'background_img_menu').setOrigin(0.5);
+        fitBackgroundToScreen(this.background, CONSTS.WIDTH, CONSTS.HEIGHT, { mode: 'cover' });
 
         // Градиентный оверлей для затемнения фона
         const overlay = this.add.rectangle(CONSTS.WIDTH / 2, CONSTS.HEIGHT / 2, CONSTS.WIDTH, CONSTS.HEIGHT, 0x000000, 0.6);
@@ -1471,9 +1495,9 @@ class MatchmakingScene extends Phaser.Scene {
     }
     
     create() {
-        // Фон
-        this.background = this.add.image(0, 0, 'background_img').setOrigin(0, 0);
-        this.background.setDisplaySize(CONSTS.WIDTH, CONSTS.HEIGHT);
+        // Фон без искажения
+        this.background = this.add.image(CONSTS.WIDTH / 2, CONSTS.HEIGHT / 2, 'background_img').setOrigin(0.5);
+        fitBackgroundToScreen(this.background, CONSTS.WIDTH, CONSTS.HEIGHT, { mode: 'cover' });
         
         // Заголовок
         this.add.text(CONSTS.WIDTH / 2, CONSTS.HEIGHT / 4, '1v1 Онлайн', {
@@ -2782,21 +2806,9 @@ class GameScene extends Phaser.Scene {
             back4: this.add.image(bgCenterX, bgCenterY, 'back_4').setOrigin(0.5, 0.5).setScrollFactor(0.2, 0.2)
         };
         
-        // ФИКС: Показываем фон в меньшем масштабе чтобы видеть детали
-        // Фон 1080x1290, экран ~640x800 - поэтому делаем фон меньше
+        // Масштабируем фон по принципу cover, без искажения пропорций
         Object.values(this.backgroundLayers).forEach(layer => {
-            const textureWidth = layer.texture.width;  // 1080
-            const textureHeight = layer.texture.height; // 1290
-            
-            // Рассчитываем какой масштаб нужен чтобы покрыть экран
-            const scaleX = CONSTS.WIDTH / textureWidth;   // например 640/1080 = 0.59
-            const scaleY = CONSTS.HEIGHT / textureHeight;  // например 800/1290 = 0.62
-            
-            // Берем меньший масштаб (contain) и уменьшаем/увеличиваем для оптимального вида
-            const baseScale = Math.min(scaleX, scaleY);
-            const scale = baseScale * 0.6; // 0.8 - показываем чуть больше чем экран
-            
-            layer.setScale(scale);
+            fitBackgroundToScreen(layer, CONSTS.WIDTH, CONSTS.HEIGHT, { mode: 'cover', scale: 1.1 });
             layer.setDepth(-10); // Самый задний слой
         });
         
@@ -4998,20 +5010,7 @@ class GameScene extends Phaser.Scene {
         // Обновляем фон под новый размер с идеальными пропорциями
         if (this.backgroundLayers) {
             Object.values(this.backgroundLayers).forEach(layer => {
-                layer.setPosition(width / 2, height / 2);
-                
-                const textureWidth = layer.texture.width;  // 1080
-                const textureHeight = layer.texture.height; // 1290
-                
-                // Рассчитываем какой масштаб нужен чтобы покрыть экран
-                const scaleX = width / textureWidth;
-                const scaleY = height / textureHeight;
-                
-                // Берем меньший масштаб (contain) и уменьшаем/увеличиваем для оптимального вида
-                const baseScale = Math.min(scaleX, scaleY);
-                const scale = baseScale * 0.8; // 0.8 - показываем чуть больше чем экран
-                
-                layer.setScale(scale);
+                fitBackgroundToScreen(layer, width, height, { mode: 'cover', scale: 1.1 });
             });
         }
         
@@ -5450,9 +5449,9 @@ class InventoryScene extends Phaser.Scene {
     }
 
     async create() {
-        // Фон
-        this.background = this.add.image(0, 0, 'background_img_menu').setOrigin(0, 0);
-        this.background.setDisplaySize(CONSTS.WIDTH, CONSTS.HEIGHT);
+        // Фон без растяжения
+        this.background = this.add.image(CONSTS.WIDTH / 2, CONSTS.HEIGHT / 2, 'background_img_menu').setOrigin(0.5);
+        fitBackgroundToScreen(this.background, CONSTS.WIDTH, CONSTS.HEIGHT, { mode: 'cover' });
 
         // Заголовок - улучшенный стиль как в меню
         this.add.text(CONSTS.WIDTH / 2, 50, '🎒 Инвентарь', {
@@ -5681,9 +5680,9 @@ class StatsScene extends Phaser.Scene {
     }
 
     async create() {
-        // Фон
-        this.background = this.add.image(0, 0, 'background_img_menu').setOrigin(0, 0);
-        this.background.setDisplaySize(CONSTS.WIDTH, CONSTS.HEIGHT);
+        // Фон без искажения
+        this.background = this.add.image(CONSTS.WIDTH / 2, CONSTS.HEIGHT / 2, 'background_img_menu').setOrigin(0.5);
+        fitBackgroundToScreen(this.background, CONSTS.WIDTH, CONSTS.HEIGHT, { mode: 'cover' });
 
         // Заголовок
         this.add.text(CONSTS.WIDTH / 2, 45, '📊 Статистика', {
@@ -5849,9 +5848,9 @@ class WalletScene extends Phaser.Scene {
     }
 
     async create() {
-        // Фон
-        this.background = this.add.image(0, 0, 'background_img_menu').setOrigin(0, 0);
-        this.background.setDisplaySize(CONSTS.WIDTH, CONSTS.HEIGHT);
+        // Фон без растяжения
+        this.background = this.add.image(CONSTS.WIDTH / 2, CONSTS.HEIGHT / 2, 'background_img_menu').setOrigin(0.5);
+        fitBackgroundToScreen(this.background, CONSTS.WIDTH, CONSTS.HEIGHT, { mode: 'cover' });
 
         // Заголовок
         this.add.text(CONSTS.WIDTH / 2, 45, '💎 TON Кошелёк', {
@@ -6291,9 +6290,9 @@ class AchievementsScene extends Phaser.Scene {
     }
 
     async create() {
-        // Фон
-        this.background = this.add.image(0, 0, 'background_img_menu').setOrigin(0, 0);
-        this.background.setDisplaySize(CONSTS.WIDTH, CONSTS.HEIGHT);
+        // Фон без искажения
+        this.background = this.add.image(CONSTS.WIDTH / 2, CONSTS.HEIGHT / 2, 'background_img_menu').setOrigin(0.5);
+        fitBackgroundToScreen(this.background, CONSTS.WIDTH, CONSTS.HEIGHT, { mode: 'cover' });
 
         // Заголовок
         this.add.text(CONSTS.WIDTH / 2, 45, '🎯 Достижения', {
@@ -6698,9 +6697,9 @@ class DailyRewardScene extends Phaser.Scene {
     }
 
     async create() {
-        // Фон
-        this.background = this.add.image(0, 0, 'background_img_menu').setOrigin(0, 0);
-        this.background.setDisplaySize(CONSTS.WIDTH, CONSTS.HEIGHT);
+        // Фон без искажения
+        this.background = this.add.image(CONSTS.WIDTH / 2, CONSTS.HEIGHT / 2, 'background_img_menu').setOrigin(0.5);
+        fitBackgroundToScreen(this.background, CONSTS.WIDTH, CONSTS.HEIGHT, { mode: 'cover' });
 
         // Заголовок
         this.add.text(CONSTS.WIDTH / 2, 45, '🏆 Ежедневные награды', {
@@ -7072,9 +7071,9 @@ class ReferralScene extends Phaser.Scene {
     }
 
     async create() {
-        // Фон
-        this.background = this.add.image(0, 0, 'background_img_menu').setOrigin(0, 0);
-        this.background.setDisplaySize(CONSTS.WIDTH, CONSTS.HEIGHT);
+        // Фон без искажения
+        this.background = this.add.image(CONSTS.WIDTH / 2, CONSTS.HEIGHT / 2, 'background_img_menu').setOrigin(0.5);
+        fitBackgroundToScreen(this.background, CONSTS.WIDTH, CONSTS.HEIGHT, { mode: 'cover' });
 
         // Заголовок
         this.add.text(CONSTS.WIDTH / 2, 45, '🎁 Рефералы', {
