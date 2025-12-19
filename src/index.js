@@ -2770,8 +2770,8 @@ class GameScene extends Phaser.Scene {
         // НОВОЕ: Многослойная система фона с плавными переходами
         // Создаем 4 слоя фона с параллакс эффектом
         // Origin в центре (0.5, 0.5) и позиция в центре экрана для правильного параллакса
-        const bgCenterX = CONSTS.WIDTH / 2;
-        const bgCenterY = CONSTS.HEIGHT / 2;
+        const bgCenterX = CONSTS.WIDTH ;
+        const bgCenterY = CONSTS.HEIGHT ;
         
         // scrollFactor 0.2 - фон двигается ОЧЕНЬ медленно (20% от скорости камеры)
         // Это позволяет использовать МАЛЕНЬКИЙ масштаб без риска что фон закончится
