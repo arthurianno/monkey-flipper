@@ -2792,9 +2792,16 @@ class GameScene extends Phaser.Scene {
             const scaleX = CONSTS.WIDTH / textureWidth;   // например 640/1080 = 0.59
             const scaleY = CONSTS.HEIGHT / textureHeight;  // например 800/1290 = 0.62
             
-            // Берем меньший масштаб (contain) и уменьшаем до 0.6 чтобы видеть больше
+            // Берем меньший масштаб (contain) и уменьшаем до 0.5 чтобы видеть больше
             const baseScale = Math.min(scaleX, scaleY);
-            const scale = baseScale * 0.1; // Уменьшаем фон чтобы видеть все детали!
+            const scale = baseScale * 0.5; // Уменьшаем фон чтобы видеть все детали!
+            
+            console.log('🎨 BG SCALE:', {
+                texture: `${textureWidth}x${textureHeight}`,
+                screen: `${CONSTS.WIDTH}x${CONSTS.HEIGHT}`,
+                scaleX, scaleY, baseScale,
+                finalScale: scale
+            });
             
             layer.setScale(scale);
             layer.setDepth(-10); // Самый задний слой
@@ -5007,9 +5014,11 @@ class GameScene extends Phaser.Scene {
                 const scaleX = width / textureWidth;
                 const scaleY = height / textureHeight;
                 
-                // Берем меньший масштаб (contain) и уменьшаем до 0.6
+                // Берем меньший масштаб (contain) и уменьшаем до 0.5
                 const baseScale = Math.min(scaleX, scaleY);
-                const scale = baseScale * 0.6; // Уменьшаем фон чтобы видеть все детали!
+                const scale = baseScale * 0.5; // Уменьшаем фон чтобы видеть все детали!
+                
+                console.log('🎨 BG RESIZE:', { width, height, scale });
                 
                 layer.setScale(scale);
             });
