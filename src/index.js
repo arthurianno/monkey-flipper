@@ -2768,18 +2768,21 @@ class GameScene extends Phaser.Scene {
         this.playerStartY = 0; // НОВОЕ: Сброс стартовой позиции
 
         // НОВОЕ: Многослойная система фона с плавными переходами
-        // Создаем 4 слоя фона, которые будут плавно переключаться в зависимости от высоты
-        // scrollFactor = 0.3 создает эффект параллакса (фон двигается медленнее чем игрок)
+        // Создаем 4 слоя фона с параллакс эффектом
+        // Origin в центре (0.5, 0.5) и позиция в центре экрана для правильного параллакса
+        const bgCenterX = CONSTS.WIDTH / 2;
+        const bgCenterY = CONSTS.HEIGHT / 2;
+        
         this.backgroundLayers = {
-            back1: this.add.image(0, 0, 'back_1').setOrigin(0, 0).setScrollFactor(0.3, 0.3),
-            back2: this.add.image(0, 0, 'back_2').setOrigin(0, 0).setScrollFactor(0.3, 0.3),
-            back3: this.add.image(0, 0, 'back_3').setOrigin(0, 0).setScrollFactor(0.3, 0.3),
-            back4: this.add.image(0, 0, 'back_4').setOrigin(0, 0).setScrollFactor(0.3, 0.3)
+            back1: this.add.image(bgCenterX, bgCenterY, 'back_1').setOrigin(0.5, 0.5).setScrollFactor(0.3, 0.3),
+            back2: this.add.image(bgCenterX, bgCenterY, 'back_2').setOrigin(0.5, 0.5).setScrollFactor(0.3, 0.3),
+            back3: this.add.image(bgCenterX, bgCenterY, 'back_3').setOrigin(0.5, 0.5).setScrollFactor(0.3, 0.3),
+            back4: this.add.image(bgCenterX, bgCenterY, 'back_4').setOrigin(0.5, 0.5).setScrollFactor(0.3, 0.3)
         };
         
-        // Растягиваем все слои на весь экран (можно сделать больше для параллакса)
+        // Растягиваем все слои - делаем их очень большими чтобы покрыть весь мир с учетом параллакса
         Object.values(this.backgroundLayers).forEach(layer => {
-            layer.setDisplaySize(CONSTS.WIDTH, CONSTS.HEIGHT * 3); // Увеличиваем высоту для параллакса
+            layer.setDisplaySize(CONSTS.WIDTH * 2, CONSTS.HEIGHT * 5); // Огромный фон для покрытия всей игры
             layer.setDepth(-10); // Самый задний слой
         });
         
@@ -4981,7 +4984,8 @@ class GameScene extends Phaser.Scene {
         // Обновляем фон под новый размер - НОВОЕ: обновляем все слои с учетом параллакса
         if (this.backgroundLayers) {
             Object.values(this.backgroundLayers).forEach(layer => {
-                layer.setDisplaySize(width, height * 3); // Увеличиваем высоту для параллакса
+                layer.setDisplaySize(width * 2, height * 5); // Огромный фон для покрытия всей игры
+                layer.setPosition(width / 2, height / 2); // Центрируем
             });
         }
         
