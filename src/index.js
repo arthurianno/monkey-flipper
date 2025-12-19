@@ -3804,6 +3804,24 @@ class GameScene extends Phaser.Scene {
         this.groundBottom = this.ground.y + (this.ground.displayHeight / 2);
         
         console.log('🌍 Земля теперь на Y:', newGroundY, 'Игрок на Y:', this.player.y);
+        
+        // НОВОЕ: Плавный переход фона обратно к начальному (back_1) при появлении земли
+        if (this.backgroundLayers) {
+            console.log('🎨 Начинаем переход фона к начальному при падении...');
+            // Плавно возвращаем к первому слою (низ/начало)
+            this.tweens.add({
+                targets: this.backgroundLayers.back1,
+                alpha: 1,
+                duration: 1500, // 1.5 секунды плавного перехода
+                ease: 'Power2'
+            });
+            this.tweens.add({
+                targets: [this.backgroundLayers.back2, this.backgroundLayers.back3, this.backgroundLayers.back4],
+                alpha: 0,
+                duration: 1500,
+                ease: 'Power2'
+            });
+        }
     }
 
     // НОВОЕ: Метод для обработки game over при падении на землю
