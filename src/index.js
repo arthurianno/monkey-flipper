@@ -2781,15 +2781,24 @@ class GameScene extends Phaser.Scene {
             back4: this.add.image(bgCenterX, bgCenterY, 'back_4').setOrigin(0.5, 0.5).setScrollFactor(0.7, 0.7)
         };
         
-        // Правильное масштабирование с сохранением пропорций (как CSS background-size: cover)
+        // Идеальное масштабирование с сохранением пропорций
         Object.values(this.backgroundLayers).forEach(layer => {
             const textureWidth = layer.texture.width;
             const textureHeight = layer.texture.height;
+            const textureRatio = textureWidth / textureHeight;
+            const screenRatio = CONSTS.WIDTH / CONSTS.HEIGHT;
             
-            // Рассчитываем масштаб чтобы покрыть весь экран (минимальный для покрытия)
-            const scaleX = CONSTS.WIDTH / textureWidth;
-            const scaleY = CONSTS.HEIGHT / textureHeight;
-            const scale = Math.max(scaleX, scaleY) * 1.5; // 1.5x для параллакса
+            let scale;
+            if (textureRatio > screenRatio) {
+                // Фон шире экрана - масштабируем по высоте
+                scale = CONSTS.HEIGHT / textureHeight;
+            } else {
+                // Фон выше экрана - масштабируем по ширине
+                scale = CONSTS.WIDTH / textureWidth;
+            }
+            
+            // Небольшое увеличение для покрытия при параллаксе (1.2x вместо 1.5x)
+            scale *= 1.2;
             
             layer.setScale(scale);
             layer.setDepth(-10); // Самый задний слой
@@ -4990,18 +4999,27 @@ class GameScene extends Phaser.Scene {
         const camera = this.cameras.main;
         camera.setSize(width, height);
         
-        // Обновляем фон под новый размер с правильными пропорциями
+        // Обновляем фон под новый размер с идеальными пропорциями
         if (this.backgroundLayers) {
             Object.values(this.backgroundLayers).forEach(layer => {
                 layer.setPosition(width / 2, height / 2);
                 
                 const textureWidth = layer.texture.width;
                 const textureHeight = layer.texture.height;
+                const textureRatio = textureWidth / textureHeight;
+                const screenRatio = width / height;
                 
-                // Рассчитываем масштаб чтобы покрыть весь экран (как CSS background-size: cover)
-                const scaleX = width / textureWidth;
-                const scaleY = height / textureHeight;
-                const scale = Math.max(scaleX, scaleY) * 1.5; // 1.5x для параллакса
+                let scale;
+                if (textureRatio > screenRatio) {
+                    // Фон шире экрана - масштабируем по высоте
+                    scale = height / textureHeight;
+                } else {
+                    // Фон выше экрана - масштабируем по ширине
+                    scale = width / textureWidth;
+                }
+                
+                // Небольшое увеличение для покрытия при параллаксе
+                scale *= 1.2;
                 
                 layer.setScale(scale);
             });
