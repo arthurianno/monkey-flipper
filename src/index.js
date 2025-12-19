@@ -2672,9 +2672,10 @@ class GameScene extends Phaser.Scene {
         this.load.image('platform', 'assets/balloon_green.png');
         this.load.image('balloon_under_player', 'assets/balloon_under_player.png'); // НОВОЕ: Текстура под игроком
         this.load.image('balloon_smash', 'assets/balloon_smash.png'); // НОВОЕ: Текстура smash
-        this.load.image('balloon_unbreakable_smash', 'assets/balloon_blue_smash.png'); // НОВОЕ: Текстура smash для нелопающихся шариков
+        // ОТКЛЮЧЕНО: Текстуры для синих (нелопающихся) шариков
+        // this.load.image('balloon_unbreakable_smash', 'assets/balloon_blue_smash.png'); // НОВОЕ: Текстура smash для нелопающихся шариков
         this.load.image('balloon_dead', 'assets/balloon_dead.png'); // НОВОЕ: Текстура dead
-        this.load.image('balloon_unbreakable', 'assets/balloon_blue.png'); // НОВОЕ: Текстура для нелопающихся шариков (синий цвет)
+        // this.load.image('balloon_unbreakable', 'assets/balloon_blue.png'); // НОВОЕ: Текстура для нелопающихся шариков (синий цвет)
         this.load.image('ground', 'assets/ground.png');
 
         // Добавь логи для отладки загрузки (убери потом)
@@ -3449,10 +3450,10 @@ class GameScene extends Phaser.Scene {
             // НОВОЕ: Назначаем тип платформы
             platform.platformType = this.choosePlatformType();
             
-            // ФИКС: Первый шар всегда синий (нелопающийся)
-            if (i === 0) {
-                platform.platformType = 'unbreakable';
-            }
+            // ОТКЛЮЧЕНО: Первый шар больше не синий (нелопающийся)
+            // if (i === 0) {
+            //     platform.platformType = 'unbreakable';
+            // }
             
             // НОВОЕ: Настройка для движущихся платформ
             if (platform.platformType === 'moving') {
@@ -3462,11 +3463,11 @@ class GameScene extends Phaser.Scene {
                 platform.moveDirection = 1; // 1 = вправо, -1 = влево
             }
             
-            // НОВОЕ: Настройка для нелопающихся платформ (синий цвет)
-            if (platform.platformType === 'unbreakable') {
-                platform.setTexture('balloon_unbreakable');
-                platform.setScale(59/30, 110/73);
-            }
+            // ОТКЛЮЧЕНО: Настройка для нелопающихся платформ (синий цвет)
+            // if (platform.platformType === 'unbreakable') {
+            //     platform.setTexture('balloon_unbreakable');
+            //     platform.setScale(59/30, 110/73);
+            // }
             
             this.setupPlatformBody(platform); // ФИКС: Вызов функции
             console.log('🎈 Платформа', i, 'создана на Y:', platformY, 'gap:', gap, 'тип:', platform.platformType);
@@ -3603,15 +3604,15 @@ class GameScene extends Phaser.Scene {
         const standingPlatform = this.getStandingPlatform();
         // ИЗМЕНЕНО: Убрана логика с clingPlatform, только прыжок со стоящей платформы
         if (standingPlatform) {
-            // НОВОЕ: Обработка ручного прыжка с нелопающихся шариков
-            if (standingPlatform.platformType === 'unbreakable') {
-                console.log('🔵 Прыжок с нелопающегося шарика!');
-                this.player.body.setAllowGravity(true);
-                this.player.setVelocityY(CONSTS.JUMP_VELOCITY * this.jumpMultiplier);
-                this.player.anims.stop();
-                this.player.setTexture('monkey_up'); // ФИКС: Статичная текстура вместо анимации
-                return;
-            }
+            // ОТКЛЮЧЕНО: Обработка ручного прыжка с нелопающихся шариков
+            // if (standingPlatform.platformType === 'unbreakable') {
+            //     console.log('🔵 Прыжок с нелопающегося шарика!');
+            //     this.player.body.setAllowGravity(true);
+            //     this.player.setVelocityY(CONSTS.JUMP_VELOCITY * this.jumpMultiplier);
+            //     this.player.anims.stop();
+            //     this.player.setTexture('monkey_up'); // ФИКС: Статичная текстура вместо анимации
+            //     return;
+            // }
             
             // НОВОЕ: Остановка движения для движущихся платформ при прыжке
             if (standingPlatform.platformType === 'moving' && !standingPlatform.isLanded) {
@@ -3640,12 +3641,20 @@ class GameScene extends Phaser.Scene {
             ? this.seededRandom.intRange(1, 100)
             : Phaser.Math.Between(1, 100); // Случайное число от 1 до 100
         
-        if (rand <= CONSTS.PLATFORM_TYPE_NORMAL_PERCENT) {
-            return 'normal'; // 1-60: обычный (60%)
-        } else if (rand <= CONSTS.PLATFORM_TYPE_NORMAL_PERCENT + CONSTS.PLATFORM_TYPE_MOVING_PERCENT) {
-            return 'moving'; // 61-90: движущийся (30%)
+        // ОТКЛЮЧЕНО: Синие (нелопающиеся) шарики временно убраны
+        // if (rand <= CONSTS.PLATFORM_TYPE_NORMAL_PERCENT) {
+        //     return 'normal'; // 1-60: обычный (60%)
+        // } else if (rand <= CONSTS.PLATFORM_TYPE_NORMAL_PERCENT + CONSTS.PLATFORM_TYPE_MOVING_PERCENT) {
+        //     return 'moving'; // 61-90: движущийся (30%)
+        // } else {
+        //     return 'unbreakable'; // 91-100: нелопающийся (10%)
+        // }
+        
+        // НОВОЕ: Только обычные и движущиеся шарики (без синих)
+        if (rand <= 67) {
+            return 'normal'; // 1-67: обычный (67%)
         } else {
-            return 'unbreakable'; // 91-100: нелопающийся (10%)
+            return 'moving'; // 68-100: движущийся (33%)
         }
     }
 
@@ -3723,32 +3732,32 @@ class GameScene extends Phaser.Scene {
     // НОВОЕ: Автоматический прыжок при касании платформы сверху (только для шариков, не земли)
     // ФИКС: Прыгаем только если это НЕ та же платформа, с которой мы только что прыгнули
     if (player.body.touching.down && !platformObj.isGround && player.body.velocity.y >= 0 && platformObj !== this.lastBouncePlatform) {
-        // НОВОЕ: Обработка нелопающихся шариков
-        if (platformObj.platformType === 'unbreakable') {
-    console.log('🔵 Прыжок с нелопающегося шарика!');
-    player.setVelocityY(CONSTS.JUMP_VELOCITY * this.jumpMultiplier); // С учётом буста
-    this.player.anims.stop();
-    this.player.setTexture('monkey_up');
-    
-    // НОВОЕ: Эффект пружины для синего шара
-    platformObj.setTexture('balloon_unbreakable_smash'); // Меняем на сжатую текстуру
-    
-    // Анимация сжатия (пружина)
-    this.tweens.add({
-        targets: platformObj,
-        scaleY: 0.8,  // Сжимаем по вертикали
-        duration: 150, // 0.15 сек сжатия
-        ease: 'Quad.easeOut',
-        yoyo: true,    // Возврат к исходному размеру
-        repeat: 0,
-        onComplete: () => {
-            // Возвращаем обычную текстуру после анимации
-            platformObj.setTexture('balloon_unbreakable');
-        }
-    });
-    
-    return;
-}
+        // ОТКЛЮЧЕНО: Обработка нелопающихся шариков
+        // if (platformObj.platformType === 'unbreakable') {
+        //     console.log('🔵 Прыжок с нелопающегося шарика!');
+        //     player.setVelocityY(CONSTS.JUMP_VELOCITY * this.jumpMultiplier); // С учётом буста
+        //     this.player.anims.stop();
+        //     this.player.setTexture('monkey_up');
+        //     
+        //     // НОВОЕ: Эффект пружины для синего шара
+        //     platformObj.setTexture('balloon_unbreakable_smash'); // Меняем на сжатую текстуру
+        //     
+        //     // Анимация сжатия (пружина)
+        //     this.tweens.add({
+        //         targets: platformObj,
+        //         scaleY: 0.8,  // Сжимаем по вертикали
+        //         duration: 150, // 0.15 сек сжатия
+        //         ease: 'Quad.easeOut',
+        //         yoyo: true,    // Возврат к исходному размеру
+        //         repeat: 0,
+        //         onComplete: () => {
+        //             // Возвращаем обычную текстуру после анимации
+        //             platformObj.setTexture('balloon_unbreakable');
+        //         }
+        //     });
+        //     
+        //     return;
+        // }
         
         // НОВОЕ: Остановка движения для движущихся платформ при приземлении
         if (platformObj.platformType === 'moving' && !platformObj.isLanded) {
