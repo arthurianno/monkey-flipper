@@ -299,7 +299,10 @@ class MenuScene extends Phaser.Scene {
 
         // Кнопки - КОМПАКТНЫЕ ДЛЯ ТЕЛЕФОНА (реорганизованное меню)
         const buttons = [
-            { text: '🎮 Играть', y: CONSTS.HEIGHT / 2 - 200, callback: () => this.scene.start('GameScene') },
+            { text: '🎮 Играть', y: CONSTS.HEIGHT / 2 - 200, callback: () => {
+                if (window.stopIntroVideo) window.stopIntroVideo(); // Останавливаем видео если оно играет
+                this.scene.start('GameScene');
+            }},
             { text: '⚔️ PvP', y: CONSTS.HEIGHT / 2 - 145, callback: () => this.scene.start('PvPMenuScene') },
             { text: '🏆 Турниры', y: CONSTS.HEIGHT / 2 - 90, callback: () => this.scene.start('TournamentScene') },
             { text: '📊 Рейтинг', y: CONSTS.HEIGHT / 2 - 35, callback: () => this.openLeaderboard() },
