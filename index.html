@@ -152,7 +152,7 @@
 <body>
     <!-- 🎬 INTRO VIDEO OVERLAY -->
     <div id="intro-video-overlay">
-        <video id="intro-video" playsinline muted preload="auto" autoplay>
+        <video id="intro-video" playsinline preload="auto" autoplay>
             <source src="./assets/intro.mp4" type="video/mp4">
             Ваш браузер не поддерживает видео
         </video>
@@ -196,8 +196,22 @@
                 hideIntro();
             }
             
-            overlay.addEventListener('click', skipIntro, { once: true });
-            overlay.addEventListener('touchstart', skipIntro, { once: true, passive: false });
+            // Включить звук по клику если был muted
+            function unmute(e) {
+                if (video.muted) {
+                    video.muted = false;
+                    console.log('🔊 Звук включен по клику пользователя');
+                }
+            }
+            
+            overlay.addEventListener('click', function(e) {
+                unmute(e);
+                skipIntro(e);
+            }, { once: true });
+            overlay.addEventListener('touchstart', function(e) {
+                unmute(e);
+                skipIntro(e);
+            }, { once: true, passive: false });
             
             // Автоматически скрыть после окончания видео
             video.addEventListener('ended', function() {
@@ -226,16 +240,29 @@
                 if (videoStarted) return;
                 console.log('▶️ Попытка запустить видео...');
                 
+                // Сначала пробуем со звуком
+                video.muted = false;
                 const playPromise = video.play();
                 
                 if (playPromise !== undefined) {
                     playPromise.then(function() {
                         videoStarted = true;
-                        console.log('✅ Видео воспроизводится!');
+                        console.log('✅ Видео воспроизводится СО ЗВУКОМ!');
                     }).catch(function(error) {
-                        console.warn('⚠️ Автовоспроизведение заблокировано:', error.name, error.message);
-                        // Показываем подсказку что нужен тап
-                        document.getElementById('skip-intro-hint').textContent = '👆 Нажмите чтобы начать';
+                        console.warn('⚠️ Автовоспроизведение со звуком заблокировано:', error.name);
+                        // Пробуем без звука
+                        video.muted = true;
+                        const mutedPlayPromise = video.play();
+                        if (mutedPlayPromise !== undefined) {
+                            mutedPlayPromise.then(function() {
+                                videoStarted = true;
+                                console.log('✅ Видео воспроизводится БЕЗ ЗВУКА (fallback)');
+                            }).catch(function(err) {
+                                console.error('❌ Не удалось запустить видео:', err.message);
+                                // Показываем подсказку что нужен тап
+                                document.getElementById('skip-intro-hint').textContent = '👆 Нажмите чтобы начать';
+                            });
+                        }
                     });
                 }
             }
